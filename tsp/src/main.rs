@@ -8,5 +8,5 @@ fn main() {
     let filename = args.remove(1);
 
     let t = utils::read_tsp_file(filename).unwrap();
-    println!("{:?}", t.is_symmetric());
+    println!("{:?}", t.get_adjacency_matrix());
 }

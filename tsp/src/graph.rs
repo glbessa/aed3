@@ -47,5 +47,39 @@ impl<T: Eq> Graph<T> {
         true
     }
 
+    pub fn kruskal_mst(&self) -> Graph<T> {
+        todo!()
+    }
 
+    pub fn prim_mst(&self) -> Graph<T> {
+        todo!()
+    }
+
+    pub fn boruvka_mst(&self) -> Graph<T> {
+        todo!()
+    }
+
+    pub fn bfs(&self) -> Graph<T> {
+        todo!()
+    }
+
+    pub fn dfs(&self) -> Graph<T> {
+        todo!()
+    }
+
+    pub fn floyd_warshall(&self) -> Graph<T> {
+        todo!()
+    }
+
+    pub fn dijkstra(&self) -> Graph<T> {
+        todo!()
+    }
+
+    pub fn bellman_ford(&self) -> Graph<T> {
+        todo!()
+    }
+
+    pub fn tsp_2_approx(&self) -> Graph<T> {
+        todo!()
+    }
 }
