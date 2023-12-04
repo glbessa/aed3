@@ -3,28 +3,31 @@ use std::cmp::{Ordering, Reverse, Eq, Ord};
 use std::convert::TryInto;
 use std::clone::Clone;
 use std::fmt::Display;
+use std::time::Instant;
+use chrono::prelude::*;
+use rand;
 
-pub struct Graph<V: Eq + Display + Clone, M: Clone + Display> {
+pub struct Graph<V: Eq + Display + Clone> {
     vertices: Vec<V>,
-    adjacency_matrix: Vec<Vec<M>>
+    adjacency_matrix: Vec<Vec<u64>>
 }
 
-impl<V: Eq + Display + Clone, M: Clone + Display + Eq + Ord> Graph<V, M> {
+impl<V: Eq + Display + Clone> Graph<V> {
     pub fn new() -> Self {
         Graph {
             vertices: Vec::<V>::new(),
-            adjacency_matrix: Vec::<Vec<M>>::new()
+            adjacency_matrix: Vec::<Vec<u64>>::new()
         }
     }
 
-    pub fn from(vertices: Vec<V>, adjacency_matrix: Vec<Vec<M>>) -> Self {
+    pub fn from(vertices: Vec<V>, adjacency_matrix: Vec<Vec<u64>>) -> Self {
         Graph {
             vertices: vertices,
             adjacency_matrix
         }
     }
 
-    pub fn get_adjacency_matrix(&self) -> &Vec<Vec<M>> {
+    pub fn get_adjacency_matrix(&self) -> &Vec<Vec<u64>> {
         &self.adjacency_matrix
     }
 
@@ -82,7 +85,7 @@ impl<V: Eq + Display + Clone, M: Clone + Display + Eq + Ord> Graph<V, M> {
         Ok(&self.vertices[vertex_idx])
     }
 
-    pub fn insert_edge(&mut self, src_idx: usize, dst_idx: usize, edge_weight: M, directed: bool) -> Result<(), &'static str> {
+    pub fn insert_edge(&mut self, src_idx: usize, dst_idx: usize, edge_weight: u64, directed: bool) -> Result<(), &'static str> {
         if self.vertices.len() <= src_idx || self.vertices.len() <= dst_idx {
             return Err("Index out of range!");
         }
@@ -110,12 +113,12 @@ impl<V: Eq + Display + Clone, M: Clone + Display + Eq + Ord> Graph<V, M> {
         Ok(())
     }
 
-    pub fn get_edge_weight(&self, src_idx: usize, dst_idx: usize) -> Result<M, &'static str> {
+    pub fn get_edge_weight(&self, src_idx: usize, dst_idx: usize) -> Result<u64, &'static str> {
         if self.num_vertices() <= src_idx || self.num_vertices() <= dst_idx {
             return Err("Index out of range!");
         }
 
-        let weight: M = self.adjacency_matrix[src_idx][dst_idx];
+        let weight: u64 = self.adjacency_matrix[src_idx][dst_idx];
 
         Ok(weight)
     }
@@ -138,6 +141,26 @@ impl<V: Eq + Display + Clone, M: Clone + Display + Eq + Ord> Graph<V, M> {
 
     pub fn num_vertices(&self) -> usize {
         self.vertices.len()
+    }
+
+    pub fn get_random_route(&self) -> Result<Vec<usize>, &'static str> {
+        todo!()
+    }
+
+    pub fn get_route_cost(&self, route: &Vec<usize>) -> Result<u64, &'static str> {
+        if !self.is_squared() {
+            return Err("Graph is not squared!");
+        }
+
+        let mut cost: u64 = 0;
+
+        for i in 0..route.len() - 1 {
+            cost += self.get_edge_weight(route[i], route[i+1])?;
+        }
+
+        cost += self.get_edge_weight(route[route.len()-1], route[0])?;
+
+        Ok(cost)
     }
 
     pub fn get_dijkstra_path(&self, src_idx: usize, dst_idx: usize) -> Result<VecDeque<usize>, &'static str> {
@@ -292,7 +315,7 @@ impl<V: Eq + Display + Clone, M: Clone + Display + Eq + Ord> Graph<V, M> {
     // Algoritmo de Prim: inicia adicionando ao conjunto A os vertices ligados pela aresta de menor custo
     //      e após vai adicionando os vertices que tiverem menor custo e estejam sejam adjacentes aos já existentes
     // https://pt.wikipedia.org/wiki/Algoritmo_de_Prim
-    pub fn get_mst_prim(&self) -> Graph<V, u64> {
+    pub fn get_mst_prim(&self) -> Graph<V> {
         let mut a: HashSet<usize> = HashSet::with_capacity(self.vertices.len());
         let mut heap: BinaryHeap<Reverse<(u64, (usize, usize))>> = BinaryHeap::new();
         let mut edges: Vec<(usize, usize)> = Vec::with_capacity(self.vertices.len() - 1);
@@ -363,7 +386,111 @@ impl<V: Eq + Display + Clone, M: Clone + Display + Eq + Ord> Graph<V, M> {
         return Graph::from(self.vertices.clone(), adjacency_matrix);
     }
 
-    pub fn tsp_2_approx(&self) -> Self {
+    pub fn tsp_exact(&self, ) -> Result<Self, &'static str> {
+        if !self.is_squared() {
+            return Err("Graph is not squared!");
+        }
+
+        let mut best_route: Vec<usize> = Vec::new();
+        let mut best_cost: u64 = 0;
+        let mut actual_route: Vec<usize> = Vec::new();
+        let mut actual_cost: u64 = 0;
+
+        let mut visited: Vec<bool> = vec![false; self.num_vertices()];
+
+        todo!()
+    }
+
+    pub fn tsp_2_opt_approx(&self, log: bool) -> Result<(Vec<usize>, u64), &'static str> {
+        if !self.is_squared() {
+            return Err("Graph is not squared!");
+        }
+
+        let mut actual_slice: Vec<usize>;
+        let mut actual_route: Vec<usize> = (0..self.num_vertices()).collect();
+        let mut actual_cost: u64 = self.get_route_cost(&actual_route)?;
+        let mut best_route: Vec<usize> = (0..self.num_vertices()).collect();
+        let mut best_cost: u64 = actual_cost.clone();
+        let mut counter: usize = 0;
+
+        let start_time = Instant::now();
+
+        while actual_cost == best_cost {
+            for i in 0..self.num_vertices() {
+                for j in i + 1..self.num_vertices() {
+                    actual_slice = actual_route[i..j].to_vec();
+                    actual_slice.reverse();
+                    actual_route.splice(i..j, actual_slice);
+                    
+                    actual_cost = self.get_route_cost(&actual_route)?;
+
+                    if actual_cost < best_cost {
+                        best_cost = actual_cost.clone();
+                        best_route = actual_route.clone();
+                    }
+                }
+            }
+
+            if log {
+                println!("Iteration: {} - Route cost: {} - Route found: {}", counter, best_cost, best_route.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" -> "));
+            }
+        }
+
+        let end_time = Instant::now();
+        if log {
+            println!("Time elapsed: {} - Total iterations: {}", end_time.duration_since(start_time).as_secs(), counter);
+        }
+
+        Ok((best_route, best_cost))
+    }
+
+    pub fn tsp_christofides_approx(&self) -> Result<Vec<usize>, &'static str> {
+        if !self.is_squared() {
+            return Err("Graph is not squared!");
+        }
+
+        if !self.is_symmetric() {
+            return Err("Graph is not symmetric! Cannot use Christofides algorithm!");
+        }
+
+        todo!()
+    }
+
+    pub fn tsp_nearest_neighbor_approx(&self) -> Result<Vec<usize>, &'static str> {
+        if !self.is_squared() {
+            return Err("Graph is not squared!");
+        }
+
+        let mut actual_vertex: usize = 0;
+        let mut actual_route: Vec<usize> = Vec::new();
+        let mut actual_cost: u64;
+        let mut min_cost: u64;
+        let mut min_cost_vertex: usize;
+
+        // Generating starting point
+        actual_route.push(0);
+
+        for i in 1..self.num_vertices() {
+            min_cost = self.get_edge_weight(actual_vertex, i)?;
+            min_cost_vertex = i;
+
+            for j in 0..self.num_vertices() {
+                if actual_route.contains(&j) {
+                    continue;
+                }
+
+                actual_cost = self.get_edge_weight(actual_vertex, j)?;
+
+                if actual_cost < min_cost {
+                    min_cost = actual_cost;
+                    min_cost_vertex = j;
+                }
+            }
+
+            actual_vertex = min_cost_vertex.clone();
+            actual_route.push(min_cost_vertex);
+        }
+
         todo!()
     }
 }
