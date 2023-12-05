@@ -1,11 +1,10 @@
 use std::collections::{BinaryHeap, HashSet, VecDeque};
-use std::cmp::{Ordering, Reverse, Eq, Ord};
+use std::cmp::{Reverse, Eq};
 use std::convert::TryInto;
 use std::clone::Clone;
 use std::fmt::Display;
 use std::time::Instant;
-use chrono::prelude::*;
-use rand;
+use itertools::Itertools;
 
 pub struct Graph<V: Eq + Display + Clone> {
     vertices: Vec<V>,
@@ -159,6 +158,22 @@ impl<V: Eq + Display + Clone> Graph<V> {
         }
 
         cost += self.get_edge_weight(route[route.len()-1], route[0])?;
+
+        Ok(cost)
+    }
+
+    pub fn get_route_cost_2(&self, route: &Vec<&usize>) -> Result<u64, &'static str> {
+        if !self.is_squared() {
+            return Err("Graph is not squared!");
+        }
+
+        let mut cost: u64 = 0;
+
+        for i in 0..route.len() - 1 {
+            cost += self.get_edge_weight(*route[i], *route[i+1])?;
+        }
+
+        cost += self.get_edge_weight(*route[route.len()-1], *route[0])?;
 
         Ok(cost)
     }
@@ -386,19 +401,43 @@ impl<V: Eq + Display + Clone> Graph<V> {
         return Graph::from(self.vertices.clone(), adjacency_matrix);
     }
 
-    pub fn tsp_exact(&self, ) -> Result<Self, &'static str> {
+    pub fn tsp_exact(&self, log: bool) -> Result<(Vec<usize>, u64), &'static str> {
         if !self.is_squared() {
             return Err("Graph is not squared!");
         }
 
-        let mut best_route: Vec<usize> = Vec::new();
-        let mut best_cost: u64 = 0;
-        let mut actual_route: Vec<usize> = Vec::new();
-        let mut actual_cost: u64 = 0;
+        
+        let first_route: Vec<usize> = (0..self.num_vertices()).collect();
+        let mut actual_cost: u64 = self.get_route_cost(&first_route)?;
+        let mut best_route: Vec<usize> = first_route.clone();
+        let mut best_cost: u64 = actual_cost.clone();
+        let mut counter: usize = 0;
 
-        let mut visited: Vec<bool> = vec![false; self.num_vertices()];
+        let start_time = Instant::now();
 
-        todo!()
+        let permutations = first_route.iter().permutations(self.num_vertices());
+
+        for permutation in permutations {
+            counter += 1;
+            actual_cost = self.get_route_cost_2(&permutation)?;
+
+            if actual_cost < best_cost {
+                best_cost = actual_cost.clone();
+                best_route = permutation.into_iter().cloned().collect();
+            }
+
+            if log && counter % 10000 == 0{
+                println!("Iteration: {} - Time elapsed: {} - Route cost: {}", counter, Instant::now().duration_since(start_time).as_secs(), best_cost);
+            }
+        }
+        
+        let end_time = Instant::now();
+
+        if log {
+            println!("Total iterations: {} - Time elapsed: {} - Best route cost: {} - Best route found: {}", counter, end_time.duration_since(start_time).as_secs(), best_cost, best_route.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" -> "));
+        }
+
+        Ok((best_route, best_cost))
     }
 
     pub fn tsp_2_opt_approx(&self, log: bool) -> Result<(Vec<usize>, u64), &'static str> {
@@ -431,9 +470,10 @@ impl<V: Eq + Display + Clone> Graph<V> {
                 }
             }
 
-            if log {
+            if log && counter % 10000 == 0{
                 println!("Iteration: {} - Route cost: {} - Route found: {}", counter, best_cost, best_route.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" -> "));
             }
+            counter += 1;
         }
 
         let end_time = Instant::now();
