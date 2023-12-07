@@ -2,4 +2,4 @@
 
 Projetos implementados durante a disciplina:
 
-- [Caixeiro Viajante Euclidiano](./tsp)
+- [Problema do Caixeiro Viajante](./tsp)

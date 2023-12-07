@@ -6,7 +6,7 @@ use std::fmt::Display;
 use std::time::Instant;
 use itertools::Itertools;
 
-pub struct Graph<V: Eq + Display + Clone> {
+pub struct Graph<V: Eq + PartialEq + Display + Clone> {
     vertices: Vec<V>,
     adjacency_matrix: Vec<Vec<u64>>
 }
@@ -406,7 +406,6 @@ impl<V: Eq + Display + Clone> Graph<V> {
             return Err("Graph is not squared!");
         }
 
-        
         let first_route: Vec<usize> = (0..self.num_vertices()).collect();
         let mut actual_cost: u64 = self.get_route_cost(&first_route)?;
         let mut best_route: Vec<usize> = first_route.clone();
@@ -427,14 +426,14 @@ impl<V: Eq + Display + Clone> Graph<V> {
             }
 
             if log && counter % 10000 == 0{
-                println!("Iteration: {} - Time elapsed: {} - Route cost: {}", counter, Instant::now().duration_since(start_time).as_secs(), best_cost);
+                println!("Iteration: {} - Time elapsed: {} - Route cost: {}", counter, Instant::now().duration_since(start_time).as_micros(), best_cost);
             }
         }
         
         let end_time = Instant::now();
 
         if log {
-            println!("Total iterations: {} - Time elapsed: {} - Best route cost: {} - Best route found: {}", counter, end_time.duration_since(start_time).as_secs(), best_cost, best_route.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" -> "));
+            println!("Total iterations: {} - Time elapsed: {} - Best route cost: {} - Best route found: {}", counter, end_time.duration_since(start_time).as_micros(), best_cost, best_route.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" -> "));
         }
 
         Ok((best_route, best_cost))
@@ -478,7 +477,7 @@ impl<V: Eq + Display + Clone> Graph<V> {
 
         let end_time = Instant::now();
         if log {
-            println!("Time elapsed: {} - Total iterations: {}", end_time.duration_since(start_time).as_secs(), counter);
+            println!("Time elapsed: {} - Total iterations: {}", end_time.duration_since(start_time).as_micros(), counter);
         }
 
         Ok((best_route, best_cost))
@@ -496,7 +495,7 @@ impl<V: Eq + Display + Clone> Graph<V> {
         todo!()
     }
 
-    pub fn tsp_nearest_neighbor_approx(&self) -> Result<Vec<usize>, &'static str> {
+    pub fn tsp_nearest_neighbor_greedy(&self) -> Result<Vec<usize>, &'static str> {
         if !self.is_squared() {
             return Err("Graph is not squared!");
         }

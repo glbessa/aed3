@@ -1,0 +1,4 @@
+#ifndef APPROXIMATIVE_H
+#define APPROXIMATIVE_H
+
+#endif
