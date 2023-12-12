@@ -57,8 +57,6 @@ def two_opt(matriz_adjacencia):
 
     return melhor_rota, melhor_distancia
 
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         utils.print_help()

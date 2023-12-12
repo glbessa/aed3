@@ -1,4 +1,4 @@
-# Travelling Salesman Problem
+# Travelling Salesman Problem by [Luis Miguel Ávila Mattos](https://github.com/LuisMamattos)
 
 ## How to run
 
