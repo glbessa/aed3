@@ -23,7 +23,7 @@ fn main() {
     let _results: (Vec<usize>, u64);
 
     if algorithm == "exact" {
-        _results = match t.tsp_exact(true) {
+        _results = match t.tsp_brute_force(true) {
             Ok(r) => r,
             Err(e) => {
                 println!("Error: {}", e);
@@ -38,6 +38,20 @@ fn main() {
                 process::exit(1);
             }
         };
+    } else if algorithm == "3opt" {
+
+    } else if algorithm == "nn" {
+
+    } else if algorithm == "christofides" {
+        _results = match t.tsp_christofides_approx(true) {
+            Ok(r) => r,
+            Err(e) => {
+                println!("Error: {}", e);
+                process::exit(1);
+            }
+        };
+    } else if algorithm == "held-karp" {
+
     } else {
         println!("Error: Unknown algorithm {}", algorithm);
         process::exit(1);

@@ -26,6 +26,18 @@ impl<V: Eq + Display + Clone> Graph<V> {
         }
     }
 
+    pub fn union(&mut self, &t: Self) -> Result<(), &'static str> {
+        for i in 0..*t.num_vertices() {
+            self.insert_vertex(*t.get_vertex(i)?.clone());
+
+            for j in 0..*t.num_vertices() {
+                self.insert_edge(i, j, *t.get_edge_weight(i, j)?, false)?;
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn get_adjacency_matrix(&self) -> &Vec<Vec<u64>> {
         &self.adjacency_matrix
     }
@@ -98,7 +110,7 @@ impl<V: Eq + Display + Clone> Graph<V> {
         Ok(())
     }
 
-    pub fn remove_edge(&mut self, src_idx: usize, dst_idx: usize, directed: bool) -> Result<(), &'static str> {
+    pub fn remove_edge(&mut self, src_idx: usize, dst_idx: uselfsize, directed: bool) -> Result<(), &'static str> {
         if self.num_vertices() <= src_idx || self.num_vertices() <= dst_idx {
             return Err("Index out of range!");
         }
@@ -176,6 +188,34 @@ impl<V: Eq + Display + Clone> Graph<V> {
         cost += self.get_edge_weight(*route[route.len()-1], *route[0])?;
 
         Ok(cost)
+    }
+
+    pub fn get_eulerian_path(&self) -> Result<Vec<usize>, &'static str> {
+        let mut eulerian_path: Vec<usize> = Vec::new();
+
+        for i in 0..self.num_vertices() {
+            if self.get_adjacent_vertices(i)?.len() % 2 != 0 {
+                return Err("Graph does not have an eulerian path!");
+            }
+        }
+
+        let mut actual_vertex: usize = 0;
+        eulerian_path.push(actual_vertex);
+
+        loop {
+            if actual_vertex == 0 {
+                break;
+            }
+
+            eulerian_path.push(actual_vertex);
+
+            let mut adjacents: Vec<usize> = self.get_adjacent_vertices(actual_vertex)?;
+
+            self.remove_edge(actual_vertex, min_cost_vertex, false)?;
+
+            actual_vertex = min_cost_vertex;
+        }
+
     }
 
     pub fn get_dijkstra_path(&self, src_idx: usize, dst_idx: usize) -> Result<VecDeque<usize>, &'static str> {
@@ -330,7 +370,7 @@ impl<V: Eq + Display + Clone> Graph<V> {
     // Algoritmo de Prim: inicia adicionando ao conjunto A os vertices ligados pela aresta de menor custo
     //      e após vai adicionando os vertices que tiverem menor custo e estejam sejam adjacentes aos já existentes
     // https://pt.wikipedia.org/wiki/Algoritmo_de_Prim
-    pub fn get_mst_prim(&self) -> Graph<V> {
+    pub fn get_mst_prim(&self) -> Self {
         let mut a: HashSet<usize> = HashSet::with_capacity(self.vertices.len());
         let mut heap: BinaryHeap<Reverse<(u64, (usize, usize))>> = BinaryHeap::new();
         let mut edges: Vec<(usize, usize)> = Vec::with_capacity(self.vertices.len() - 1);
@@ -401,7 +441,54 @@ impl<V: Eq + Display + Clone> Graph<V> {
         return Graph::from(self.vertices.clone(), adjacency_matrix);
     }
 
-    pub fn tsp_exact(&self, log: bool) -> Result<(Vec<usize>, u64), &'static str> {
+    pub fn get_mst_boruvka(&self) -> Self {
+        todo!()
+    }
+
+    pub fn perfect_matching(&self) -> Result<Self, &'static str> {
+        let mut visited_vertices = vec![false; self.num_vertices()];
+        let mut max_coup_graph = Graph::new();
+
+        for i in 0..self.num_vertices() {
+            if visited_vertices[i] {
+                continue;
+            }
+
+            visited_vertices[i] = true;
+            let mut min_cost_vertex: usize = 0;
+
+            for j in 0..self.num_vertices() {
+                if visited_vertices[j] {
+                    continue;
+                }
+
+                if self.get_edge_weight(i, j)? < min_cost {
+                    min_cost = j;
+                }
+            }
+
+            visited_vertices[min_cost_vertex] = true;
+            max_coup_graph.insert_vertex(self.get_vertex(i)?.clone());
+            max_coup_graph.insert_vertex(self.get_vertex(min_cost_vertex)?.clone());
+            max_coup_graph.insert_edge(i, min_cost_vertex, self.get_edge_weight(i, min_cost_vertex)?, false);
+        }
+
+        Ok(max_coup_graph)
+    }
+
+    pub fn get_odd_degree_vertices(&self) -> Result<Vec<usize>, &'static str> {
+        let mut odd_degree_vertices: Vec<usize> = Vec::new();
+
+        for i in 0..self.num_vertices() {
+            if self.get_adjacent_vertices(i)?.len() % 2 != 0 {
+                odd_degree_vertices.push(i);
+            }
+        }
+
+        Ok(odd_degree_vertices)
+    }
+
+    pub fn tsp_brute_force(&self, log: bool) -> Result<(Vec<usize>, u64), &'static str> {
         if !self.is_squared() {
             return Err("Graph is not squared!");
         }
@@ -414,10 +501,11 @@ impl<V: Eq + Display + Clone> Graph<V> {
 
         let start_time = Instant::now();
 
-        let permutations = first_route.iter().permutations(self.num_vertices());
+        let permutations = first_route.iter().permutations(self.num_vertices() - 1);
 
         for permutation in permutations {
             counter += 1;
+            permutation.push(&(num_vertices - 1));
             actual_cost = self.get_route_cost_2(&permutation)?;
 
             if actual_cost < best_cost {
@@ -483,16 +571,42 @@ impl<V: Eq + Display + Clone> Graph<V> {
         Ok((best_route, best_cost))
     }
 
+    pub fn tsp_3_opt_approx(&self, log: bool) -> Result<(Vec<usize>, u64), &'static str> {
+        todo!()
+    }
+
     pub fn tsp_christofides_approx(&self) -> Result<Vec<usize>, &'static str> {
         if !self.is_squared() {
             return Err("Graph is not squared!");
         }
 
         if !self.is_symmetric() {
-            return Err("Graph is not symmetric! Cannot use Christofides algorithm!");
+            return Err("Graph is not symmetric!");
         }
 
-        todo!()
+        let start_time = Instant::now();
+
+        let mut mst: Graph<V> = self.get_mst_prim();
+        let mut odd_degree_vertices: Vec<usize> = mst.get_odd_degree_vertices()?;
+        let mut odd_graph: Graph<V> = Graph::new();
+
+        for i in 0..odd_degree_vertices.len() {
+            for j in 0..odd_degree_vertices.len() {
+                odd_graph.insert_edge(odd_degree_vertices[i], odd_degree_vertices[j], self.get_edge_weight(odd_degree_vertices[i], odd_degree_vertices[j])?, false)?;
+            }
+        }
+
+        let mut matching: Graph<V> = odd_graph.perfect_matching()?;
+        mst.union(matching)?;
+
+        // Eulirian cycle
+        let mut eulerian_path: Vec<usize> = mst.get_eulerian_path()?;
+
+        let mut end_time = Instant::now();
+
+        if log {
+            println!("MST time elapsed: {}", end_time.duration_since(start_time).as_micros());
+        }   
     }
 
     pub fn tsp_nearest_neighbor_greedy(&self) -> Result<Vec<usize>, &'static str> {
