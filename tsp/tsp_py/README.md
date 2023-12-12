@@ -9,3 +9,5 @@
 - `brute_force`: Brute force algorithm
 
 - `2opt`: 2-opt algorithm
+
+- `christ`: Christofides algorithm
