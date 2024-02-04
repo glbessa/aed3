@@ -190,6 +190,7 @@ impl<V: Eq + Display + Clone> Graph<V> {
         Ok(cost)
     }
 
+    // Fleury algorithm: https://en.wikipedia.org/wiki/Eulerian_path#Fleury's_algorithm
     pub fn get_eulerian_path(&self) -> Result<Vec<usize>, &'static str> {
         let mut eulerian_path: Vec<usize> = Vec::new();
 
@@ -199,23 +200,7 @@ impl<V: Eq + Display + Clone> Graph<V> {
             }
         }
 
-        let mut actual_vertex: usize = 0;
-        eulerian_path.push(actual_vertex);
-
-        loop {
-            if actual_vertex == 0 {
-                break;
-            }
-
-            eulerian_path.push(actual_vertex);
-
-            let mut adjacents: Vec<usize> = self.get_adjacent_vertices(actual_vertex)?;
-
-            self.remove_edge(actual_vertex, min_cost_vertex, false)?;
-
-            actual_vertex = min_cost_vertex;
-        }
-
+        
     }
 
     pub fn get_dijkstra_path(&self, src_idx: usize, dst_idx: usize) -> Result<VecDeque<usize>, &'static str> {
